@@ -21,7 +21,12 @@ namespace GroupMeAnalysis {
                 var groupsResponseTask = client.GetAsync(GroupMeApi.GenerateRequestUrl("groups"));
                 var groupsResponseContentTask = groupsResponseTask.Result.Content.ReadAsStringAsync();
 
-                var deserialized = JsonConvert.DeserializeObject<ApiResponse<List<Group>>>(groupsResponseContentTask.Result);
+                var deserializeSettings = new JsonSerializerSettings {
+                    NullValueHandling = NullValueHandling.Ignore,
+                    MissingMemberHandling = MissingMemberHandling.Ignore
+                };
+                var deserialized = JsonConvert.DeserializeObject<ApiResponse<List<Group>>>(groupsResponseContentTask.Result,
+                    deserializeSettings);
 
                 return deserialized.Response;
             });
@@ -33,6 +38,28 @@ namespace GroupMeAnalysis {
     class ApiResponse<T> {
         [JsonProperty(PropertyName = "response")]
         public T Response {get; set;}
+    }
+
+    public class MessagesRequest {
+        [JsonProperty(PropertyName = "before_id")]
+        public string BeforeId {get; set;}
+
+        [JsonProperty(PropertyName = "since_id")]
+        public string SinceId {get; set;}
+
+        [JsonProperty(PropertyName = "after_id")]
+        public string AfterId {get; set;}
+
+        [JsonProperty(PropertyName = "limit")]
+        public int Limit {get; set;}
+    }
+
+    public class MessagesResponse {
+        [JsonProperty(PropertyName = "count")]
+        public int Count {get; set;}
+
+        [JsonProperty(PropertyName = "messages")]
+        public List<Message> Messages {get; set;}
     }
 
     public class UnixSecondsToDateTimeConverter : DateTimeConverterBase {
