@@ -21,7 +21,7 @@ namespace GroupMeAnalysis {
         public string ImageUrl {get; set;}
 
         [JsonProperty(PropertyName = "creator_user_id")]
-        public long CreatorUserId {get; set;}
+        public string CreatorUserId {get; set;}
 
         [JsonProperty(PropertyName = "created_at")]
         [JsonConverter(typeof(UnixSecondsToDateTimeConverter))]
@@ -47,7 +47,7 @@ namespace GroupMeAnalysis {
 
     public class GroupMember {
         [JsonProperty(PropertyName = "user_id")]
-        public long UserId {get; set;}
+        public string UserId {get; set;}
 
         [JsonProperty(PropertyName = "nickname")]
         public string Nickname {get; set;}
@@ -94,7 +94,7 @@ namespace GroupMeAnalysis {
 
     public class Message {
         [JsonProperty(PropertyName = "id")]
-        public long Id {get; set;}
+        public string Id {get; set;}
 
         [JsonProperty(PropertyName = "source_guid")]
         public string SourceGuid {get; set;}
@@ -104,10 +104,16 @@ namespace GroupMeAnalysis {
         public DateTime CreatedAt {get; set;}
 
         [JsonProperty(PropertyName = "user_id")]
-        public long UserId {get; set;}
+        public string UserId {get; set;}
 
         [JsonProperty(PropertyName = "group_id")]
-        public long GroupId {get; set;}
+        public string GroupId {get; set;}
+
+        [JsonProperty(PropertyName = "sender_id")]
+        public string SenderId {get; set;}
+
+        [JsonProperty(PropertyName = "sender_type")]
+        public string SenderType {get; set;}
 
         [JsonProperty(PropertyName = "name")]
         public string Name {get; set;}
@@ -126,6 +132,10 @@ namespace GroupMeAnalysis {
 
         [JsonProperty(PropertyName = "attachments")]
         public List<MessageAttachment> Attachments {get; set;}
+
+        public override string ToString() {
+            return this.Name + ": " + this.Text;
+        }
 
     }
 
@@ -153,5 +163,11 @@ namespace GroupMeAnalysis {
 
         [JsonProperty(PropertyName = "charmap")]
         public List<List<int>> Charmap {get; set;}
+
+        [JsonProperty(PropertyName = "loci")]
+        public List<List<int>> Loci {get; set;}
+
+        [JsonProperty(PropertyName = "mentions")]
+        public List<long> Mentions {get; set;}
     }
 }

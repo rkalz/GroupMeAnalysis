@@ -18,17 +18,39 @@ namespace GroupMeAnalysis {
             var task = new Task<List<Group>>(() => {
                 HttpClient client = new HttpClient();
 
-                var groupsResponseTask = client.GetAsync(GroupMeApi.GenerateRequestUrl("groups"));
+                var groupsResponseTask = client.GetAsync(GenerateRequestUrl("groups"));
                 var groupsResponseContentTask = groupsResponseTask.Result.Content.ReadAsStringAsync();
 
-                var deserializeSettings = new JsonSerializerSettings {
+                var settings = new JsonSerializerSettings {
                     NullValueHandling = NullValueHandling.Ignore,
                     MissingMemberHandling = MissingMemberHandling.Ignore
                 };
                 var deserialized = JsonConvert.DeserializeObject<ApiResponse<List<Group>>>(groupsResponseContentTask.Result,
-                    deserializeSettings);
+                    settings);
 
                 return deserialized.Response;
+            });
+            task.Start();
+            return task;
+        }
+
+        public static Task<List<Message>> GetMessagesAsync(string groupId, string lastId = "", int limit = 100) {
+
+            var task = new Task<List<Message>>(() => {
+                HttpClient client = new HttpClient();
+                var url = GenerateRequestUrl("groups/" + groupId + "/messages");
+                url = url + "&before_id=" + lastId + "&limit=" + limit.ToString();
+                var settings = new JsonSerializerSettings {
+                    NullValueHandling = NullValueHandling.Ignore,
+                    MissingMemberHandling = MissingMemberHandling.Ignore
+                };
+
+                var sendMessagesReqTask = client.GetAsync(url);
+
+                var listOfMessagesTask = sendMessagesReqTask.Result.Content.ReadAsStringAsync();
+                var apiResponse = JsonConvert.DeserializeObject<ApiResponse<MessagesResponse>>(listOfMessagesTask.Result, settings);
+
+                return apiResponse.Response.Messages;
             });
             task.Start();
             return task;
@@ -38,20 +60,6 @@ namespace GroupMeAnalysis {
     class ApiResponse<T> {
         [JsonProperty(PropertyName = "response")]
         public T Response {get; set;}
-    }
-
-    public class MessagesRequest {
-        [JsonProperty(PropertyName = "before_id")]
-        public string BeforeId {get; set;}
-
-        [JsonProperty(PropertyName = "since_id")]
-        public string SinceId {get; set;}
-
-        [JsonProperty(PropertyName = "after_id")]
-        public string AfterId {get; set;}
-
-        [JsonProperty(PropertyName = "limit")]
-        public int Limit {get; set;}
     }
 
     public class MessagesResponse {
