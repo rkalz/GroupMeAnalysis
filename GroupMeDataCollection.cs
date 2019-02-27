@@ -19,10 +19,11 @@ namespace GroupMeAnalysis {
                             newMsgs = GroupMeApi.GetMessagesAfterIdAsync(group.Id, lastMessageId).Result;
                         }
                     });
+                    newMessagesTask.Start();
                 }
 
                 var oldId = NpgSqlApi.GetOldestGroupMessageAsync(group).Result;
-                if (oldId == null) oldId = group.MessageInfo.LastMessageId;
+                if (oldId == null) oldId = "";
                 var oldMsgs = GroupMeApi.GetMessagesBeforeIdAsync(group.Id, oldId).Result;
 
                 while (oldMsgs.Count != 0) {

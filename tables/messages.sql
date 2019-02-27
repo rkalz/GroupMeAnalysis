@@ -12,9 +12,6 @@ CREATE TABLE messages (
     attachment_mentions character varying[],
     attachment_types character varying[],
     attachment_urls text[],
-    attachment_split_tokens character varying[],
-    attachment_emoji_placeholders text[],
-    attachment_emoji_charmaps text[],
     attachment_locis text[],
     message text
 );

@@ -110,19 +110,15 @@ namespace GroupMeAnalysis {
                     var mentions = new List<string>();
                     var attachTypes = new List<string>();
                     var urls = new List<string>();
-                    var splitTokens = new List<string>();
-                    var placeholders = new List<string>();
-                    var charmaps = new List<string>();
                     var locis = new List<string>();
 
+                    var text = m.Text == null ? "" : m.Text;
+
                     m.Attachments.ForEach((MessageAttachment ma) => {
-                        if (ma.Mentions.Count != 0) mentions.AddRange(ma.Mentions);
-                        mentions.Add(ma.Type);
-                        if (ma.Url.Length != 0) urls.Add(ma.Url);
-                        if (ma.SplitToken.Length != 0) splitTokens.Add(ma.SplitToken);
-                        if (ma.EmojiPlaceholder.Length != 0) placeholders.Add(ma.EmojiPlaceholder);
-                        ma.Charmap.ForEach(l => l.ForEach(i => charmaps.Add(i.ToString())));
-                        ma.Loci.ForEach(l => l.ForEach(i => locis.Add(i.ToString())));
+                        if (ma.Mentions != null) mentions.AddRange(ma.Mentions);
+                        attachTypes.Add(ma.Type);
+                        if (ma.Url != null) urls.Add(ma.Url);
+                        if (ma.Loci != null) ma.Loci.ForEach(l => l.ForEach(i => locis.Add(i.ToString())));
                     });
 
                     using (var conn = new NpgsqlConnection(Secret.ConnString)) {
@@ -134,11 +130,10 @@ namespace GroupMeAnalysis {
                             (id, source_guid, created_at, user_id, group_id,
                             sender_id, sender_type, name, system, favorited_by,
                             attachment_mentions, attachment_types, attachment_urls,
-                            attachment_split_tokens, attachment_emoji_placeholders,
-                            attachment_emoji_charmaps, attachment_locis, message)
+                            attachment_locis, message)
                             VALUES (@id, @guid, @created, @user, @group, @sender,
                             @sender_type, @name, @system, @favorited, @mentions,
-                            @types, @urls, @tokens, @placeholders, @charmaps, @loci, @message)
+                            @types, @urls, @loci, @message)
                             ON CONFLICT (id) DO UPDATE
                             SET favorited_by = @favorited";
 
@@ -155,11 +150,8 @@ namespace GroupMeAnalysis {
                             cmd.Parameters.AddWithValue("mentions", mentions);
                             cmd.Parameters.AddWithValue("types", attachTypes);
                             cmd.Parameters.AddWithValue("urls", urls);
-                            cmd.Parameters.AddWithValue("tokens", splitTokens);
-                            cmd.Parameters.AddWithValue("placeholders", placeholders);
-                            cmd.Parameters.AddWithValue("charmaps", charmaps);
                             cmd.Parameters.AddWithValue("loci", locis);
-                            cmd.Parameters.AddWithValue("message", m.Text);
+                            cmd.Parameters.AddWithValue("message", text);
 
                             cmd.ExecuteNonQuery();
                         }

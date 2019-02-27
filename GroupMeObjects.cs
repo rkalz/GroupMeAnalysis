@@ -168,7 +168,7 @@ namespace GroupMeAnalysis {
         [JsonProperty(PropertyName = "loci")]
         public List<List<int>> Loci {get; set;}
 
-        [JsonProperty(PropertyName = "mentions")]
+        [JsonProperty(PropertyName = "user_ids")]
         public List<string> Mentions {get; set;}
     }
 }
