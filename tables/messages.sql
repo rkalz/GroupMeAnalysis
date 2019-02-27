@@ -1,0 +1,22 @@
+CREATE TABLE messages (
+    id SERIAL PRIMARY KEY,
+    source_guid character varying,
+    created_at timestamp without time zone,
+    user_id character varying,
+    group_id character varying REFERENCES gm_groups(id),
+    sender_id character varying,
+    sender_type character varying,
+    name text,
+    system boolean,
+    favorited_by character varying[],
+    attachment_type character varying,
+    attachment_url text,
+    attachment_lat text,
+    attachment_lon text,
+    attachment_locname text,
+    attackment_splittoken text,
+    attachment_emoji_placeholder text,
+    attachment_charmap integer[],
+    attachment_loci integer[],
+    attachment_mentions character varying[]
+);

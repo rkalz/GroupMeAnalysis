@@ -15,7 +15,6 @@ namespace GroupMeAnalysis {
                 var messages = fetchTask.Result;
 
                 while (messages.Count < group.MessageInfo.Count) {
-                    Console.WriteLine($"Downloaded {messages.Count} messages so far");
                     fetchTask = GroupMeApi.GetMessagesAsync(group.Id, messages.Last().Id);
                     messages.AddRange(fetchTask.Result);
                 }
