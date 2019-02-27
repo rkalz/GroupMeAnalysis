@@ -15,7 +15,7 @@ namespace GroupMeAnalysis
 
             var getAllMessagesTask = CollectData.GetAllMessagesAsync(group);
             Console.WriteLine("Started async get all messages task");
-            var messages = getAllMessagesTask.Result;
+            getAllMessagesTask.Wait();
         }
     }
 }

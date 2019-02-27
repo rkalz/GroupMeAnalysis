@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 using Newtonsoft.Json;
 
@@ -147,10 +148,10 @@ namespace GroupMeAnalysis {
         public string Url {get; set;}
 
         [JsonProperty(PropertyName = "lat")]
-        public long Latitude {get; set;}
+        public string Latitude {get; set;}
 
         [JsonProperty(PropertyName = "lon")]
-        public long Longitude {get; set;}
+        public string Longitude {get; set;}
 
         [JsonProperty(PropertyName = "name")]
         public string LocationName {get; set;}
@@ -168,6 +169,6 @@ namespace GroupMeAnalysis {
         public List<List<int>> Loci {get; set;}
 
         [JsonProperty(PropertyName = "mentions")]
-        public List<long> Mentions {get; set;}
+        public List<string> Mentions {get; set;}
     }
 }

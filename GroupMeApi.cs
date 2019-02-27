@@ -34,12 +34,34 @@ namespace GroupMeAnalysis {
             return task;
         }
 
-        public static Task<List<Message>> GetMessagesAsync(string groupId, string lastId = "", int limit = 100) {
+        public static Task<List<Message>> GetMessagesBeforeIdAsync(string groupId, string lastId = "", int limit = 100) {
 
             var task = new Task<List<Message>>(() => {
                 HttpClient client = new HttpClient();
                 var url = GenerateRequestUrl("groups/" + groupId + "/messages");
                 url = url + "&before_id=" + lastId + "&limit=" + limit.ToString();
+                var settings = new JsonSerializerSettings {
+                    NullValueHandling = NullValueHandling.Ignore,
+                    MissingMemberHandling = MissingMemberHandling.Ignore
+                };
+
+                var sendMessagesReqTask = client.GetAsync(url);
+
+                var listOfMessagesTask = sendMessagesReqTask.Result.Content.ReadAsStringAsync();
+                var apiResponse = JsonConvert.DeserializeObject<ApiResponse<MessagesResponse>>(listOfMessagesTask.Result, settings);
+
+                return apiResponse.Response.Messages;
+            });
+            task.Start();
+            return task;
+        }
+
+        public static Task<List<Message>> GetMessagesAfterIdAsync(string groupId, string lastId = "", int limit = 100) {
+
+            var task = new Task<List<Message>>(() => {
+                HttpClient client = new HttpClient();
+                var url = GenerateRequestUrl("groups/" + groupId + "/messages");
+                url = url + "&after_id=" + lastId + "&limit=" + limit.ToString();
                 var settings = new JsonSerializerSettings {
                     NullValueHandling = NullValueHandling.Ignore,
                     MissingMemberHandling = MissingMemberHandling.Ignore

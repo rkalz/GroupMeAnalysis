@@ -1,27 +1,37 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace GroupMeAnalysis {
     static class CollectData {
-        public static Task<List<Message>> GetAllMessagesAsync(Group group) {
-            var task = new Task<List<Message>>(() => {
-                var timer = new Stopwatch();
-
-                timer.Start();
-                var fetchTask = GroupMeApi.GetMessagesAsync(group.Id);
-                var messages = fetchTask.Result;
-
-                while (messages.Count < group.MessageInfo.Count) {
-                    fetchTask = GroupMeApi.GetMessagesAsync(group.Id, messages.Last().Id);
-                    messages.AddRange(fetchTask.Result);
+        public static Task GetAllMessagesAsync(Group group) {
+            var task = new Task(() => {
+                var startId = NpgSqlApi.GetNewestGroupMessageAsync(group).Result;
+                Task newMessagesTask = null;
+                if (startId != null && startId != group.MessageInfo.LastMessageId) {
+                    // Get all messages after startId
+                    newMessagesTask = new Task (() => {
+                        var newMsgs = GroupMeApi.GetMessagesAfterIdAsync(group.Id, startId).Result;
+                        while (newMsgs.Count != 0) {
+                            NpgSqlApi.AddMessagesToDatabaseAsync(group, newMsgs);
+                            var lastMessageId = newMsgs.Last().Id;
+                            newMsgs = GroupMeApi.GetMessagesAfterIdAsync(group.Id, lastMessageId).Result;
+                        }
+                    });
                 }
-                timer.Stop();
 
-                Console.WriteLine($"Downloaded {messages.Count} messages in {timer.ElapsedMilliseconds} ms");
-                return messages;
+                var oldId = NpgSqlApi.GetOldestGroupMessageAsync(group).Result;
+                if (oldId == null) oldId = group.MessageInfo.LastMessageId;
+                var oldMsgs = GroupMeApi.GetMessagesBeforeIdAsync(group.Id, oldId).Result;
+
+                while (oldMsgs.Count != 0) {
+                    NpgSqlApi.AddMessagesToDatabaseAsync(group, oldMsgs);
+                    oldId = oldMsgs.Last().Id;
+                    oldMsgs = GroupMeApi.GetMessagesBeforeIdAsync(group.Id, oldId).Result;
+                }
+
+                if (newMessagesTask != null) newMessagesTask.Wait();
             });
 
             task.Start();
