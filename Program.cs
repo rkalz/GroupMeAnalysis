@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GroupMeAnalysis
 {
@@ -10,12 +12,16 @@ namespace GroupMeAnalysis
             Console.WriteLine("Started async group task");
             var groupList = getGroupsTask.Result;
 
-            var group = groupList.Find(g => g.Id.Equals("19224977"));
-            NpgSqlApi.AsyncAddOrUpdateGroup(group).Wait();
+            var tasks = new List<Task>();
+            groupList.ForEach(group => {
+                NpgSqlApi.AsyncAddOrUpdateGroup(group).Wait();
 
-            var getAllMessagesTask = CollectData.GetAllMessagesAsync(group);
-            Console.WriteLine("Started async get all messages task");
-            getAllMessagesTask.Wait();
+                var getAllMessagesTask = CollectData.GetAllMessagesAsync(group);
+                Console.WriteLine("Started async get all messages task");
+                tasks.Add(getAllMessagesTask);
+            });
+
+            tasks.ForEach(task => task.Wait());
         }
     }
 }

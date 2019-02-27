@@ -11,6 +11,8 @@ namespace GroupMeAnalysis {
             var members = new List<string>();
             group.Members.ForEach(m => members.Add(m.UserId));
             var shareUrl = group.ShareUrl == null ? "" : group.ShareUrl;
+            var imgUrl = group.ImageUrl == null ? "" : group.ImageUrl;
+            var desc = group.Description == null ? "" : group.Description;
 
             var task = new Task(() => {
                 using (var conn = new NpgsqlConnection(Secret.ConnString)) {
@@ -31,8 +33,8 @@ namespace GroupMeAnalysis {
                         cmd.Parameters.AddWithValue("id", group.Id);
                         cmd.Parameters.AddWithValue("name", group.Name);
                         cmd.Parameters.AddWithValue("type", group.Type);
-                        cmd.Parameters.AddWithValue("desc", group.Description);
-                        cmd.Parameters.AddWithValue("img_url", group.ImageUrl);
+                        cmd.Parameters.AddWithValue("desc", desc);
+                        cmd.Parameters.AddWithValue("img_url", imgUrl);
                         cmd.Parameters.AddWithValue("cu_id", group.CreatorUserId);
                         cmd.Parameters.AddWithValue("created", group.CreatedAt);
                         cmd.Parameters.AddWithValue("updated", group.UpdatedAt);

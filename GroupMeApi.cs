@@ -49,6 +49,7 @@ namespace GroupMeAnalysis {
 
                 var listOfMessagesTask = sendMessagesReqTask.Result.Content.ReadAsStringAsync();
                 var apiResponse = JsonConvert.DeserializeObject<ApiResponse<MessagesResponse>>(listOfMessagesTask.Result, settings);
+                if (apiResponse == null) return new List<Message>();
 
                 return apiResponse.Response.Messages;
             });
