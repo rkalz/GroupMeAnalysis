@@ -21,27 +21,19 @@ namespace GroupMeAnalysis {
                     using (var cmd = new NpgsqlCommand()) {
                         cmd.Connection = conn;
                         cmd.CommandText = @"INSERT INTO public.groups
-                            (id, name, type, description, image_url, creator_user_id,
-                            created_at, updated_at, members, share_url)
-                            VALUES (@id, @name, @type, @desc, @img_url, @cu_id,
-                            @created, @updated, @members, @sh_url)
+                            (id, type, creator_user_id, created_at, updated_at, members)
+                            VALUES (@id, @type, @cu_id, @created, @updated, @members)
                             ON CONFLICT (id) DO UPDATE
-                            SET name = @name, type = @type, description = @desc,
-                            image_url = @img_url, updated_at = @updated, members = @members,
-                            share_url = @sh_url";
+                            SET updated_at = @updated, members = @members";
 
                         cmd.Parameters.AddWithValue("id", group.Id);
-                        cmd.Parameters.AddWithValue("name", group.Name);
                         cmd.Parameters.AddWithValue("type", group.Type);
-                        cmd.Parameters.AddWithValue("desc", desc);
-                        cmd.Parameters.AddWithValue("img_url", imgUrl);
                         cmd.Parameters.AddWithValue("cu_id", group.CreatorUserId);
                         cmd.Parameters.AddWithValue("created", group.CreatedAt);
                         cmd.Parameters.AddWithValue("updated", group.UpdatedAt);
                         cmd.Parameters.AddWithValue("members", members);
-                        cmd.Parameters.AddWithValue("sh_url", shareUrl);
 
-                        var result = cmd.ExecuteNonQuery();
+                        cmd.ExecuteNonQuery();
                     }
                 }
             });
