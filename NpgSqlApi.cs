@@ -147,33 +147,59 @@ namespace GroupMeAnalysis {
                     using (var conn = new NpgsqlConnection(Secret.ConnString)) {
                         conn.Open();
 
-                        var cmd = new NpgsqlCommand();
-                        cmd.Connection = conn;
-                        cmd.CommandText = @"INSERT INTO public.messages
-                        (id, source_guid, created_at, user_id, group_id,
-                        sender_id, sender_type, system, favorited_by,
-                        attachment_mentions, attachment_types, attachment_locis)
-                        VALUES (@id, @guid, @created, @user, @group,
-                        @sender, @sender_type, @system, @favorited,
-                        @mentions, @types, @loci)
-                        ON CONFLICT (id) DO UPDATE
-                        SET favorited_by = @favorited";
+                        using (var cmd = new NpgsqlCommand()) {
+                            cmd.Connection = conn;
+                            cmd.CommandText = @"INSERT INTO public.messages
+                            (id, source_guid, created_at, user_id, group_id,
+                            sender_id, sender_type, system, favorited_by,
+                            attachment_mentions, attachment_types, attachment_locis)
+                            VALUES (@id, @guid, @created, @user, @group,
+                            @sender, @sender_type, @system, @favorited,
+                            @mentions, @types, @loci)
+                            ON CONFLICT (id) DO UPDATE
+                            SET favorited_by = @favorited";
 
-                        cmd.Parameters.AddWithValue("id", m.Id);
-                        cmd.Parameters.AddWithValue("guid", m.SourceGuid);
-                        cmd.Parameters.AddWithValue("created", m.CreatedAt);
-                        cmd.Parameters.AddWithValue("user", m.UserId);
-                        cmd.Parameters.AddWithValue("group", group.Id);
-                        cmd.Parameters.AddWithValue("sender", m.SenderId);
-                        cmd.Parameters.AddWithValue("sender_type", m.SenderType);
-                        cmd.Parameters.AddWithValue("system", m.System);
-                        cmd.Parameters.AddWithValue("favorited", favoritees);
-                        cmd.Parameters.AddWithValue("mentions", mentions);
-                        cmd.Parameters.AddWithValue("types", attachTypes);
-                        cmd.Parameters.AddWithValue("loci", locis);
+                            cmd.Parameters.AddWithValue("id", m.Id);
+                            cmd.Parameters.AddWithValue("guid", m.SourceGuid);
+                            cmd.Parameters.AddWithValue("created", m.CreatedAt);
+                            cmd.Parameters.AddWithValue("user", m.UserId);
+                            cmd.Parameters.AddWithValue("group", group.Id);
+                            cmd.Parameters.AddWithValue("sender", m.SenderId);
+                            cmd.Parameters.AddWithValue("sender_type", m.SenderType);
+                            cmd.Parameters.AddWithValue("system", m.System);
+                            cmd.Parameters.AddWithValue("favorited", favoritees);
+                            cmd.Parameters.AddWithValue("mentions", mentions);
+                            cmd.Parameters.AddWithValue("types", attachTypes);
+                            cmd.Parameters.AddWithValue("loci", locis);
 
-                        cmd.ExecuteNonQuery();
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
 
+                    using (var conn = new NpgsqlConnection(Secret.ConnString)) {
+                        conn.Open();
+
+                        using (var cmd = new NpgsqlCommand()) {
+                            cmd.Connection = conn;
+                            cmd.CommandText = @"INSERT INTO public.msg_enc
+                            (id, user_id, name_enc, attach_url_enc, msg_enc)
+                            VALUES (@id, @uid, pgp_sym_encrypt(@name, @key),
+                            pgp_sym_encrypt(cast(@urls as text), @key),
+                            pgp_sym_encrypt(@msg, @key))
+                            ON CONFLICT (id, user_id) DO UPDATE
+                            SET name_enc = pgp_sym_encrypt(@name, @key),
+                            attach_url_enc = pgp_sym_encrypt(cast(@urls as text), @key),
+                            msg_enc = pgp_sym_encrypt(@msg, @key)";
+
+                            cmd.Parameters.AddWithValue("id", m.Id);
+                            cmd.Parameters.AddWithValue("uid", Secret.UserId);
+                            cmd.Parameters.AddWithValue("name", m.Name);
+                            cmd.Parameters.AddWithValue("key", Secret.Token);
+                            cmd.Parameters.AddWithValue("urls", urls);
+                            cmd.Parameters.AddWithValue("msg", text);
+
+                            cmd.ExecuteNonQuery();
+                        }
                     }
                 });
             });

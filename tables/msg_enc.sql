@@ -1,8 +1,8 @@
 CREATE TABLE msg_enc (
-    group_id character varying PRIMARY KEY,
+    id character varying PRIMARY KEY,
+    user_id character varying,
     name_enc bytea,
     attach_url_enc bytea,
     msg_enc bytea,
-    user_id character varying,
-    CONSTRAINT msg_u_gid_uid UNIQUE (group_id, user_id)
+    CONSTRAINT msg_u_gid_uid UNIQUE (id, user_id)
 );

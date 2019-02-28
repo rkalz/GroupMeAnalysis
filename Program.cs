@@ -14,8 +14,8 @@ namespace GroupMeAnalysis
             groupList.ForEach(group => {
                 NpgSqlApi.AsyncAddOrUpdateGroup(group).Wait();
 
-                //var getAllMessagesTask = CollectData.GetAllMessagesAsync(group);
-                //tasks.Add(getAllMessagesTask);
+                var getAllMessagesTask = CollectData.GetAllMessagesAsync(group);
+                tasks.Add(getAllMessagesTask);
             });
 
             tasks.ForEach(task => task.Wait());
