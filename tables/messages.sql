@@ -10,5 +10,5 @@ CREATE TABLE messages (
     favorited_by character varying[],
     attachment_mentions character varying[],
     attachment_types character varying[],
-    attachment_locis text[],
+    attachment_locis character varying[]
 );

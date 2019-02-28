@@ -122,12 +122,11 @@ namespace GroupMeAnalysis {
                             cmd.Connection = conn;
                             cmd.CommandText = @"INSERT INTO public.messages
                             (id, source_guid, created_at, user_id, group_id,
-                            sender_id, sender_type, name, system, favorited_by,
-                            attachment_mentions, attachment_types, attachment_urls,
-                            attachment_locis, message)
-                            VALUES (@id, @guid, @created, @user, @group, @sender,
-                            @sender_type, @name, @system, @favorited, @mentions,
-                            @types, @urls, @loci, @message)
+                            sender_id, sender_type, system, favorited_by,
+                            attachment_mentions, attachment_types, attachment_locis)
+                            VALUES (@id, @guid, @created, @user, @group,
+                            @sender, @sender_type, @system, @favorited,
+                            @mentions, @types, @loci)
                             ON CONFLICT (id) DO UPDATE
                             SET favorited_by = @favorited";
 
@@ -138,14 +137,11 @@ namespace GroupMeAnalysis {
                             cmd.Parameters.AddWithValue("group", group.Id);
                             cmd.Parameters.AddWithValue("sender", m.SenderId);
                             cmd.Parameters.AddWithValue("sender_type", m.SenderType);
-                            cmd.Parameters.AddWithValue("name", m.Name);
                             cmd.Parameters.AddWithValue("system", m.System);
                             cmd.Parameters.AddWithValue("favorited", favoritees);
                             cmd.Parameters.AddWithValue("mentions", mentions);
                             cmd.Parameters.AddWithValue("types", attachTypes);
-                            cmd.Parameters.AddWithValue("urls", urls);
                             cmd.Parameters.AddWithValue("loci", locis);
-                            cmd.Parameters.AddWithValue("message", text);
 
                             cmd.ExecuteNonQuery();
                         }
