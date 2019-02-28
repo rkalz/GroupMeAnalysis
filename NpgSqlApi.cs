@@ -8,13 +8,13 @@ using Npgsql;
 namespace GroupMeAnalysis {
     static class NpgSqlApi {
         public static Task AsyncAddOrUpdateGroup(Group group) {
-            var members = new List<string>();
-            group.Members.ForEach(m => members.Add(m.UserId));
-            var shareUrl = group.ShareUrl == null ? "" : group.ShareUrl;
-            var imgUrl = group.ImageUrl == null ? "" : group.ImageUrl;
-            var desc = group.Description == null ? "" : group.Description;
-
             var task = new Task(() => {
+                var members = new List<string>();
+                group.Members.ForEach(m => members.Add(m.UserId));
+                var shareUrl = group.ShareUrl == null ? "" : group.ShareUrl;
+                var imgUrl = group.ImageUrl == null ? "" : group.ImageUrl;
+                var desc = group.Description == null ? "" : group.Description;
+
                 using (var conn = new NpgsqlConnection(Secret.ConnString)) {
                     conn.Open();
 
@@ -32,6 +32,35 @@ namespace GroupMeAnalysis {
                         cmd.Parameters.AddWithValue("created", group.CreatedAt);
                         cmd.Parameters.AddWithValue("updated", group.UpdatedAt);
                         cmd.Parameters.AddWithValue("members", members);
+
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                using (var conn = new NpgsqlConnection(Secret.ConnString)) {
+                    conn.Open();
+
+                    using (var cmd = new NpgsqlCommand()) {
+                        cmd.Connection = conn;
+                        cmd.CommandText = @"INSERT INTO public.group_enc
+                        (group_id, user_id, name_enc, desc_enc, img_url_enc, share_url_enc)
+                        VALUES (@gid, @uid, pgp_sym_encrypt(@name, @key), pgp_sym_encrypt(@desc, @key),
+                        pgp_sym_encrypt(@img_url, @key), pgp_sym_encrypt(@sh_url, @key))
+                        ON CONFLICT (group_id, user_id) DO UPDATE
+                        SET name_enc = pgp_sym_encrypt(@name, @key),
+                        desc_enc = pgp_sym_encrypt(@desc, @key),
+                        img_url_enc = pgp_sym_encrypt(@img_url, @key),
+                        share_url_enc = pgp_sym_encrypt(@sh_url, @key)";
+
+                        // Note: secret params would be GroupMe Oauth token in
+                        // a production environment
+                        cmd.Parameters.AddWithValue("gid", group.Id);
+                        cmd.Parameters.AddWithValue("uid", Secret.UserId);
+                        cmd.Parameters.AddWithValue("name", group.Name);
+                        cmd.Parameters.AddWithValue("key", Secret.Token);
+                        cmd.Parameters.AddWithValue("desc", desc);
+                        cmd.Parameters.AddWithValue("img_url", imgUrl);
+                        cmd.Parameters.AddWithValue("sh_url", shareUrl);
 
                         cmd.ExecuteNonQuery();
                     }
@@ -118,33 +147,33 @@ namespace GroupMeAnalysis {
                     using (var conn = new NpgsqlConnection(Secret.ConnString)) {
                         conn.Open();
 
-                        using (var cmd = new NpgsqlCommand()) {
-                            cmd.Connection = conn;
-                            cmd.CommandText = @"INSERT INTO public.messages
-                            (id, source_guid, created_at, user_id, group_id,
-                            sender_id, sender_type, system, favorited_by,
-                            attachment_mentions, attachment_types, attachment_locis)
-                            VALUES (@id, @guid, @created, @user, @group,
-                            @sender, @sender_type, @system, @favorited,
-                            @mentions, @types, @loci)
-                            ON CONFLICT (id) DO UPDATE
-                            SET favorited_by = @favorited";
+                        var cmd = new NpgsqlCommand();
+                        cmd.Connection = conn;
+                        cmd.CommandText = @"INSERT INTO public.messages
+                        (id, source_guid, created_at, user_id, group_id,
+                        sender_id, sender_type, system, favorited_by,
+                        attachment_mentions, attachment_types, attachment_locis)
+                        VALUES (@id, @guid, @created, @user, @group,
+                        @sender, @sender_type, @system, @favorited,
+                        @mentions, @types, @loci)
+                        ON CONFLICT (id) DO UPDATE
+                        SET favorited_by = @favorited";
 
-                            cmd.Parameters.AddWithValue("id", m.Id);
-                            cmd.Parameters.AddWithValue("guid", m.SourceGuid);
-                            cmd.Parameters.AddWithValue("created", m.CreatedAt);
-                            cmd.Parameters.AddWithValue("user", m.UserId);
-                            cmd.Parameters.AddWithValue("group", group.Id);
-                            cmd.Parameters.AddWithValue("sender", m.SenderId);
-                            cmd.Parameters.AddWithValue("sender_type", m.SenderType);
-                            cmd.Parameters.AddWithValue("system", m.System);
-                            cmd.Parameters.AddWithValue("favorited", favoritees);
-                            cmd.Parameters.AddWithValue("mentions", mentions);
-                            cmd.Parameters.AddWithValue("types", attachTypes);
-                            cmd.Parameters.AddWithValue("loci", locis);
+                        cmd.Parameters.AddWithValue("id", m.Id);
+                        cmd.Parameters.AddWithValue("guid", m.SourceGuid);
+                        cmd.Parameters.AddWithValue("created", m.CreatedAt);
+                        cmd.Parameters.AddWithValue("user", m.UserId);
+                        cmd.Parameters.AddWithValue("group", group.Id);
+                        cmd.Parameters.AddWithValue("sender", m.SenderId);
+                        cmd.Parameters.AddWithValue("sender_type", m.SenderType);
+                        cmd.Parameters.AddWithValue("system", m.System);
+                        cmd.Parameters.AddWithValue("favorited", favoritees);
+                        cmd.Parameters.AddWithValue("mentions", mentions);
+                        cmd.Parameters.AddWithValue("types", attachTypes);
+                        cmd.Parameters.AddWithValue("loci", locis);
 
-                            cmd.ExecuteNonQuery();
-                        }
+                        cmd.ExecuteNonQuery();
+
                     }
                 });
             });
