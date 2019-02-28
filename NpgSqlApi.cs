@@ -8,40 +8,61 @@ using Npgsql;
 namespace GroupMeAnalysis {
     static class NpgSqlApi {
         public static Task AsyncAddOrUpdateGroup(Group group) {
-            var members = new List<string>();
-            group.Members.ForEach(m => members.Add(m.UserId));
-            var shareUrl = group.ShareUrl == null ? "" : group.ShareUrl;
-            var imgUrl = group.ImageUrl == null ? "" : group.ImageUrl;
-            var desc = group.Description == null ? "" : group.Description;
-
             var task = new Task(() => {
+                var members = new List<string>();
+                group.Members.ForEach(m => members.Add(m.UserId));
+                var shareUrl = group.ShareUrl == null ? "" : group.ShareUrl;
+                var imgUrl = group.ImageUrl == null ? "" : group.ImageUrl;
+                var desc = group.Description == null ? "" : group.Description;
+
                 using (var conn = new NpgsqlConnection(Secret.ConnString)) {
                     conn.Open();
 
                     using (var cmd = new NpgsqlCommand()) {
                         cmd.Connection = conn;
                         cmd.CommandText = @"INSERT INTO public.groups
-                            (id, name, type, description, image_url, creator_user_id,
-                            created_at, updated_at, members, share_url)
-                            VALUES (@id, @name, @type, @desc, @img_url, @cu_id,
-                            @created, @updated, @members, @sh_url)
+                            (id, type, creator_user_id, created_at, updated_at, members)
+                            VALUES (@id, @type, @cu_id, @created, @updated, @members)
                             ON CONFLICT (id) DO UPDATE
-                            SET name = @name, type = @type, description = @desc,
-                            image_url = @img_url, updated_at = @updated, members = @members,
-                            share_url = @sh_url";
+                            SET updated_at = @updated, members = @members";
 
                         cmd.Parameters.AddWithValue("id", group.Id);
-                        cmd.Parameters.AddWithValue("name", group.Name);
                         cmd.Parameters.AddWithValue("type", group.Type);
-                        cmd.Parameters.AddWithValue("desc", desc);
-                        cmd.Parameters.AddWithValue("img_url", imgUrl);
                         cmd.Parameters.AddWithValue("cu_id", group.CreatorUserId);
                         cmd.Parameters.AddWithValue("created", group.CreatedAt);
                         cmd.Parameters.AddWithValue("updated", group.UpdatedAt);
                         cmd.Parameters.AddWithValue("members", members);
+
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                using (var conn = new NpgsqlConnection(Secret.ConnString)) {
+                    conn.Open();
+
+                    using (var cmd = new NpgsqlCommand()) {
+                        cmd.Connection = conn;
+                        cmd.CommandText = @"INSERT INTO public.group_enc
+                        (group_id, user_id, name_enc, desc_enc, img_url_enc, share_url_enc)
+                        VALUES (@gid, @uid, pgp_sym_encrypt(@name, @key), pgp_sym_encrypt(@desc, @key),
+                        pgp_sym_encrypt(@img_url, @key), pgp_sym_encrypt(@sh_url, @key))
+                        ON CONFLICT (group_id, user_id) DO UPDATE
+                        SET name_enc = pgp_sym_encrypt(@name, @key),
+                        desc_enc = pgp_sym_encrypt(@desc, @key),
+                        img_url_enc = pgp_sym_encrypt(@img_url, @key),
+                        share_url_enc = pgp_sym_encrypt(@sh_url, @key)";
+
+                        // Note: secret params would be GroupMe Oauth token in
+                        // a production environment
+                        cmd.Parameters.AddWithValue("gid", group.Id);
+                        cmd.Parameters.AddWithValue("uid", Secret.UserId);
+                        cmd.Parameters.AddWithValue("name", group.Name);
+                        cmd.Parameters.AddWithValue("key", Secret.Token);
+                        cmd.Parameters.AddWithValue("desc", desc);
+                        cmd.Parameters.AddWithValue("img_url", imgUrl);
                         cmd.Parameters.AddWithValue("sh_url", shareUrl);
 
-                        var result = cmd.ExecuteNonQuery();
+                        cmd.ExecuteNonQuery();
                     }
                 }
             });
@@ -130,12 +151,11 @@ namespace GroupMeAnalysis {
                             cmd.Connection = conn;
                             cmd.CommandText = @"INSERT INTO public.messages
                             (id, source_guid, created_at, user_id, group_id,
-                            sender_id, sender_type, name, system, favorited_by,
-                            attachment_mentions, attachment_types, attachment_urls,
-                            attachment_locis, message)
-                            VALUES (@id, @guid, @created, @user, @group, @sender,
-                            @sender_type, @name, @system, @favorited, @mentions,
-                            @types, @urls, @loci, @message)
+                            sender_id, sender_type, system, favorited_by,
+                            attachment_mentions, attachment_types, attachment_locis)
+                            VALUES (@id, @guid, @created, @user, @group,
+                            @sender, @sender_type, @system, @favorited,
+                            @mentions, @types, @loci)
                             ON CONFLICT (id) DO UPDATE
                             SET favorited_by = @favorited";
 
@@ -146,14 +166,37 @@ namespace GroupMeAnalysis {
                             cmd.Parameters.AddWithValue("group", group.Id);
                             cmd.Parameters.AddWithValue("sender", m.SenderId);
                             cmd.Parameters.AddWithValue("sender_type", m.SenderType);
-                            cmd.Parameters.AddWithValue("name", m.Name);
                             cmd.Parameters.AddWithValue("system", m.System);
                             cmd.Parameters.AddWithValue("favorited", favoritees);
                             cmd.Parameters.AddWithValue("mentions", mentions);
                             cmd.Parameters.AddWithValue("types", attachTypes);
-                            cmd.Parameters.AddWithValue("urls", urls);
                             cmd.Parameters.AddWithValue("loci", locis);
-                            cmd.Parameters.AddWithValue("message", text);
+
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    using (var conn = new NpgsqlConnection(Secret.ConnString)) {
+                        conn.Open();
+
+                        using (var cmd = new NpgsqlCommand()) {
+                            cmd.Connection = conn;
+                            cmd.CommandText = @"INSERT INTO public.msg_enc
+                            (id, user_id, name_enc, attach_url_enc, msg_enc)
+                            VALUES (@id, @uid, pgp_sym_encrypt(@name, @key),
+                            pgp_sym_encrypt(cast(@urls as text), @key),
+                            pgp_sym_encrypt(@msg, @key))
+                            ON CONFLICT (id, user_id) DO UPDATE
+                            SET name_enc = pgp_sym_encrypt(@name, @key),
+                            attach_url_enc = pgp_sym_encrypt(cast(@urls as text), @key),
+                            msg_enc = pgp_sym_encrypt(@msg, @key)";
+
+                            cmd.Parameters.AddWithValue("id", m.Id);
+                            cmd.Parameters.AddWithValue("uid", Secret.UserId);
+                            cmd.Parameters.AddWithValue("name", m.Name);
+                            cmd.Parameters.AddWithValue("key", Secret.Token);
+                            cmd.Parameters.AddWithValue("urls", urls);
+                            cmd.Parameters.AddWithValue("msg", text);
 
                             cmd.ExecuteNonQuery();
                         }

@@ -6,12 +6,9 @@ CREATE TABLE messages (
     group_id character varying REFERENCES groups(id),
     sender_id character varying,
     sender_type character varying,
-    name text,
     system boolean,
     favorited_by character varying[],
     attachment_mentions character varying[],
     attachment_types character varying[],
-    attachment_urls text[],
-    attachment_locis text[],
-    message text
+    attachment_locis character varying[]
 );
