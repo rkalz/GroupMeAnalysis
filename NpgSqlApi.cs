@@ -7,7 +7,8 @@ using Npgsql;
 
 namespace GroupMeAnalysis {
     static class NpgSqlApi {
-        public static Task AsyncAddOrUpdateGroup(Group group) {
+        public static Task AsyncAddOrUpdateGroup(Group group, string userId = Secret.UserId,
+            string key = Secret.Token) {
             var task = new Task(() => {
                 var members = new List<string>();
                 group.Members.ForEach(m => members.Add(m.UserId));
@@ -55,9 +56,9 @@ namespace GroupMeAnalysis {
                         // Note: secret params would be GroupMe Oauth token in
                         // a production environment
                         cmd.Parameters.AddWithValue("gid", group.Id);
-                        cmd.Parameters.AddWithValue("uid", Secret.UserId);
+                        cmd.Parameters.AddWithValue("uid", userId);
                         cmd.Parameters.AddWithValue("name", group.Name);
-                        cmd.Parameters.AddWithValue("key", Secret.Token);
+                        cmd.Parameters.AddWithValue("key", key);
                         cmd.Parameters.AddWithValue("desc", desc);
                         cmd.Parameters.AddWithValue("img_url", imgUrl);
                         cmd.Parameters.AddWithValue("sh_url", shareUrl);
@@ -124,7 +125,8 @@ namespace GroupMeAnalysis {
             return task;
         }
 
-        public static Task AddMessagesToDatabaseAsync(Group group, List<Message> messages) {
+        public static Task AddMessagesToDatabaseAsync(Group group, List<Message> messages,
+            string userId = Secret.UserId, string key = Secret.Token) {
             var task = new Task(() => {
                 messages.ForEach((Message m) => {
                     var favoritees = new List<string>();
@@ -192,9 +194,9 @@ namespace GroupMeAnalysis {
                             msg_enc = pgp_sym_encrypt(@msg, @key)";
 
                             cmd.Parameters.AddWithValue("id", m.Id);
-                            cmd.Parameters.AddWithValue("uid", Secret.UserId);
+                            cmd.Parameters.AddWithValue("uid", userId);
                             cmd.Parameters.AddWithValue("name", m.Name);
-                            cmd.Parameters.AddWithValue("key", Secret.Token);
+                            cmd.Parameters.AddWithValue("key", key);
                             cmd.Parameters.AddWithValue("urls", urls);
                             cmd.Parameters.AddWithValue("msg", text);
 
